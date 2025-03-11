@@ -15,6 +15,18 @@ library(readxl)
 
 
 ```{r}
-data <- read_excel("input/payouts.xlsx")
+payouts_data <- clean_names(read_excel("input/payouts.xlsx"))
+
+glimpse(payouts_data)
+```
+
+#What are the total legal payout costs in L.A. for each year, and which year had the highest payout?
+```{r}
+payouts_per_year <- payouts_data %>%
+  group_by(fiscal_year) %>%
+  summarise(total_payouts = sum(amount, na.rm = TRUE)) %>%
+
+  arrange(desc(total_payouts))
+
 ```
 
