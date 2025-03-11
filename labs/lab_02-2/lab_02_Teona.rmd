@@ -1,0 +1,167 @@
+---
+title: "lab_02"
+author: "Derek Willis"
+date: "2025-01-16"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Load libraries and establish settings
+
+```{r}
+# Turn off scientific notation
+options(scipen=999)
+
+# Load the tidyverse. If you have not installed the tidyverse already, remove the # from the next line and run it first.  
+# install.packages('tidyverse')
+library(tidyverse)
+library(lubridate)
+```
+
+## Load Data
+
+Let's keep working with the UMD courses and Maryland campaign expense data we used in the pre_lab.
+
+```{r}
+umd_courses <- read_rds("data/umd_courses.rds")
+maryland_expenses <- read_csv("data/maryland_expenses.csv")
+```
+
+## Answer questions
+
+**Q1.** How many departments have offered the courses with "Climate" in the title and at least one seat? Which department has offered the most? 
+
+**A1.**
+#There are 149 departments offered the courses with "Climate" in the title and at least one seat. Atmospheric and Oceanic Science department has offered the most, 29 seats. 
+
+```{r}
+
+climate_seats <- umd_courses %>%
+  filter(str_detect(title, " Climate ") & seats > 0)
+
+num_departments <- climate_seats %>%
+  group_by(department) %>%
+  summarise(total_count = n())
+  
+nrow(climate_seats)
+
+
+top_department <- num_departments %>%
+  arrange(desc(total_count))
+  
+
+```
+
+**Q2.** Of the departments listed in A1, which one is the most interesting to you, and why? 
+
+**A2.**
+#It is interesting to see Antropology on the second place among the departments using "climate" most frequently in their title. Because, antropology is focusing on the studies of the human cultures, societies, languages, biological development, etc. And "climate" is more associated with the environmental sciences. 
+
+
+**Q3** Which departments offered the most courses in the Fall 2024 term? And which departments in that term have at least one syllabus posted? Answer both of those questions and then compare the top five departments - how are they different?
+
+**A3.**
+#Business and Management offered the most courses in the Fall 2024 term. Veterinary Medical Sciences, Urban Studies and Planning and others have at least one syllanus posted in that term. Top four department seems to be more technical and the fifth one is about philosphy. It is interesting to see that every course offers several hundreds of seats, and it's only Engineering, Professional Masters that has only 40 seats. 
+
+```{r}
+
+fall_2024_courses <- umd_courses %>%
+  filter(term == 202408) %>%
+  group_by(department) %>%
+  summarise(total_courses = n(),.groups = 'drop'  ) %>%
+  arrange(desc(total_courses))
+
+one_syllabus_dept <- umd_courses %>%
+  filter(term == 202408, syllabus_count > 0) %>%
+  group_by(department) %>%
+
+  arrange(desc(syllabus_count))
+
+```
+
+**Q4.** Using the Maryland campaign expenses data, change the datatype of the expenditure_date column so that it is a date and not a chr, saving the result as a new dataframe. 
+- Then create a new column for the month based on expenditure_date. 
+- Then write code that shows total amount spent each month by Wes Moore's committee (you'll need to search the data to find the exact name, and we're not looking in payee_name). 
+- Write a sentence describing the pattern of spending over time. 
+
+**A4.**
+#I tried all possible ways I could to get the results, Googled and asked Ai, but I could not figure out why moore_spending does not show the dates and any information either. So, I don't think the code is accurate and therefore, I cannot answer the last question, unfortunately.
+
+```{r}
+
+maryland_expenses <- maryland_expenses %>% 
+  mutate(expenditure_date = mdy(expenditure_date))
+
+
+
+
+maryland_expenses <- maryland_expenses %>%
+  mutate(month = floor_date(expenditure_date, "month"))
+
+unique(maryland_expenses$committee_name)
+
+
+moore_spending <- maryland_expenses %>%
+  filter(committee_name == "Moore  Wes For Maryland") %>%
+  group_by(month) %>%
+  summarise(total_spent = sum(amount),.groups = 'drop') %>%
+  arrange(month)
+
+print(moore_spending)
+
+```
+```{r}
+
+maryland_expenses <- maryland_expenses %>% 
+  mutate(expenditure_date = mdy(floor_date))
+
+
+```
+
+
+**Q5.** Using case_when(), create a column in the Maryland expenses data called `spending_location` indicating whether each record spent money in Maryland or outside Maryland. 
+
+-For records that are in Maryland, make the new column's value "In-state" and for all others, make it "Out of state". 
+
+-Then write code that shows the total amount of money spent in each category and describe the results. 
+-- You can do this in one statement or break it up into two statements (saving the new column to your dataframe). 
+
+**A5**
+#There was 51834 number of expenses for In-state and 46078 expenses for Out of state. Total amount for In-state spent was 77.735.787. While it is not available for the out of state expenses. 
+```{r}
+
+spending_location <- maryland_expenses %>%
+  filter(amount >= 0) |>
+  mutate(spending_location = case_when(
+    str_detect(address, "Maryland|MD") ~ "In-state",
+    TRUE ~ "Out of state"
+  ))
+
+spending_summary <- spending_location %>%
+  group_by(spending_location) %>%
+  summarise(total_amount = sum(amount),number_of_expenses = n()) %>%
+  arrange(desc(total_amount)) %>%
+  mutate(total_amount = round(total_amount, 2))
+
+```
+
+**Q6.** Choose your own adventure: using either the UMD courses or campaign expenses data, ask and answer a question that is different than the previous ones. You can use one of the ones you provided in the pre_lab. **A6.**
+
+#I am interested who are the top 5 payees who received the most money from Wes Moore's campaign, and what was the total amount each received?
+
+	
+Gusto, Paragon, Sapphire Strategies, Hart Research are among the top five top five payees who received the most money in the campaign, besides the Moore Miller. 
+```{r}
+
+top_payees <- maryland_expenses %>%
+  filter(committee_name == "Moore  Wes For Maryland") %>%
+  group_by(payee_name) %>%
+  summarise(total_received = sum(amount, na.rm = TRUE), .groups = 'drop') %>%
+  arrange(desc(total_received)) %>%
+  top_n(5, total_received)
+
+print(top_payees)
+```

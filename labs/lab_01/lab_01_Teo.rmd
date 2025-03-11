@@ -1,0 +1,104 @@
+---
+title: "lab_01"
+author: "Derek Willis"
+date: "2025-01-16"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+# Turn off scientific notation
+options(scipen=999)
+```
+
+## About this lab
+
+To complete this lab, you need to: \* run existing code as directed (look for **Task**). \* modify existing code as directed (look for **Task**). \* write code in empty codeblocks provided to answer questions included (look for **Q**). \* write out the answer in the form of a complete sentence in the space given (look for **A**). When you are finished, commit changes and push to your personal GitHub repo, then submit the URL to this document on ELMS.
+
+Remember to add any new verbs or concepts to your class reference notebook!
+
+## Load libraries and establish settings
+
+**Task** Run the codeblock below to load the Tidyverse. To run the codeblock, hit the little green play button in the upper right corner of the gray area (the codeblock) below.
+
+```{r}
+# Load the tidyverse. If you have not installed the tidyverse already, remove the # from the next line and run it first.  
+# install.packages('tidyverse')
+library(tidyverse)
+```
+
+## Load Data
+
+We're going to load the UMD courses data.
+
+**Task** Run the codeblock below to load the data, which is contained in an RDS file.
+
+```{r}
+umd_courses <- read_rds("lab_01.rds")
+```
+
+## Answer questions
+
+**Q1** Which department has the highest mean (average) number of seats for its classes? You need to show the department with the highest average first. Which one is the most surprising/interesting to you? **A1**
+# Computer, math and natural sciences has the highest mean number of seats, 440. Seems technical classes are the most demanded. Looking at the first 6 and expanding to the first 10 departments with the highest average number of seats, it's surprising that there's no art and social sciences mentioned. But they might be included under "First-Year Innovation & Research Experience" or "University Courses".
+
+
+```{r}
+library(dplyr)
+
+department_avg_seats <- umd_courses %>%
+  group_by(department) %>%
+  summarise(avg_seats = mean(seats, na.rm = TRUE)) %>%
+  arrange(desc(avg_seats))
+
+department_avg_seats %>% head(10)
+```
+
+**Q2** Find out the greatest number of times any individual class has been offered in our dataset. Your code must show the greatest number of classes first.
+**A2**
+#Introduction to African American Studies is one of the most frequently offered courses, having been offered 29 times. (Is it possible to have title, id and count on the same page? Right now they're scattered)
+
+
+```{r}
+greatest_offered <- umd_courses %>%
+  group_by(id, title) %>%
+  summarise(count = n()) %>%
+  arrange(desc(count))
+
+greatest_offered
+
+```
+
+**Q3** Count the number of courses for each instructor and department. Which instructor has taught the most?
+**A3**
+#Keith Yearwood has taught Geographical Sciences the most frequently, having taught it 79 times. 
+
+
+```{r}
+instructor_course_count <- umd_courses %>%
+  filter(!is.na(instructors), instructors != "Instructor: TBA") %>%
+  group_by(instructors, department) %>%
+  summarise(instructor_course_count = n(), .groups = "drop") %>%
+  arrange(desc(instructor_course_count))  
+
+instructor_course_count
+
+```
+
+**Q4** Given the results for Q3, what would have made it easier to find the answer? You don't have to know *how* to accomplish this; I want you to describe in words what would make the answer easier to see. How confident are you that the answer you got is the right one, and why? **A4**
+#It is asking about several variables at the same time, which I am not comfortable with. I think my answer is somewhat correct. But at first, I've got lots of answers with "TBA" included. They were not useful because wouldn't help to answer the question, so, I had to search how to filter. 
+
+
+**Q5** Take one of the questions you listed in the final question of the pre_lab and try to answer it here in code. If you don't know how to fully answer it, write what code you can and describe in words what else you would need to do. If you got an answer, is it interesting? **A5**
+#Based on my analysis, Engineering Science instructor James Green has taught the highest number of seats with 34,335 students. However, I think this finding would be more meaningful with a specific time frame for context. So, I'll need to adjust my query to include the time frame.
+
+```{r}
+professor_seat_count <- umd_courses %>%
+  filter(!is.na(instructors), instructors != "Instructor: TBA") %>%
+  group_by(instructors, department) %>%
+  summarise(total_seats = sum(seats, na.rm = TRUE), .groups = "drop") %>%
+  arrange(desc(total_seats))
+
+print(professor_seat_count)
+
+```

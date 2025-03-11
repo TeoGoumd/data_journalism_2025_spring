@@ -1,0 +1,20 @@
+---
+title: "reverse_engineering_02_Teo"
+author: "Teona"
+date: "2025-03-10"
+output: html_document
+---
+
+```{r}
+library(tidyverse)
+library(lubridate)
+library(janitor)
+library(openxlsx)
+library(readxl)
+```
+
+
+```{r}
+data <- read_excel("input/payouts.xlsx")
+```
+
