@@ -29,7 +29,7 @@ print(payouts_data)
 ```{r}
 expenses_by_year <- payouts_data %>%
   group_by(fiscal_year) %>%
-  summarize(amount = n()) %>%
+  summarize(amount = sum(amount, na.rm = TRUE)) %>%
   arrange(desc(amount))
 
 
@@ -44,7 +44,6 @@ Article is published in 2018.
 
 - How much did the city spend on legal settlements and court judgments in 2017?
 - What was the largest amount the city has ever paid out in legal settlements and judgments in a single year?
-- How did the city's spending on legal settlements and court judgments surpass its spending on libraries or fixing its streets?
 
 ```{r}
 #2.1
@@ -63,31 +62,25 @@ largest_settlement_payment <- expenses_by_year %>%
 
 print(largest_settlement_payment)
 
-
-#2.3
-
-lib_str_services_spending <- payouts_data %>%
-  filter(department == 'Library' | department == 'Public Works / Bureau of Street Services') %>%
-  summarize(total_amount = sum(amount, na.rm = TRUE))
-
-print(lib_str_services_spending)
-  
-  
-
-#compare spending???
-
 ```
 
-
+"Last budget year, a class-action lawsuit over a telephone tax cost the city $45 million."
 
 #Q3: 
 
-
+How much did the class-action lawsuit over a telephone tax cost the city in the last budget year?
 
 ```{r}
 
-```
+tele_tax <- payouts_data %>%
+  filter(case_type == "Utility Tax") %>%
+  summarize(total_amount = sum(amount, na.rm = TRUE))
 
+print(tele_tax)
+  
+
+#As I was searching "tax" in payouts_data, only five results popped up and was easy to pick the right one for the filter. Amount paid and the case_type matched, so, the person who received more than $45 milliion for a telephone tax lawsuit was Ardon Estuarado in 2017. 
+```
 
 "Thousands of legal battles involving the Los Angeles Police Department, including a rash of recent settlements over police shootings and wrongful imprisonment, have added up to more than 40% of the total — a higher sum than any other city department. That includes more than $24 million paid to two men who were freed after decades in prison, along with lawsuits over arrests, injuries, car crashes and alleged retaliation and discrimination against its own employees."
 
@@ -106,14 +99,17 @@ lapd_payouts <- payouts_data %>%
 
 print(lapd_payouts)
 
-#This cannot be true.. the outcome is 183.252
-lapd_percentage <- (lapd_payouts / legal_settlement_payments) * 100
+
+total_legal_settlements <- payouts_data %>%
+   summarize(total_amount = sum(amount, na.rm = TRUE))
+
+
+lapd_percentage <- (lapd_payouts$total_amount / total_legal_settlements$total_amount) * 100
 
 
 print(lapd_percentage)
 
 #4.3
-
 
 wrongful_imprisonment <- payouts_data %>%
   filter(case_type == "Police - False Arrest/Detention/Imprisonment") %>%
@@ -123,48 +119,58 @@ print(wrongful_imprisonment)
   
   
 
-#for employee discrimination - 
-various_lapd_lawsuits <- payouts_data %>%
-  filter(department == "Police Department"
-           case_type == "Law Enforcement Related Injury", "Traffic Accident", , "Retaliation") %>%
- summarize(total_amount = sum(amount, na.rm = TRUE))
-
-print(various_lapd_lawsuits)
-
-
+arrests_injuries_crashes <- payouts_data %>%
+  filter(filter(case_type ==
+    "Police - Civil Rights Violation",
+    "Traffic Accident - Pedestrian",
+    "Traffic Accident - Other",
+    "Traffic Accident - Failed to Stop/Yield"
+  )) %>%
+  summarize(arrests_injuries_crashes = sum(amount, na.rm = TRUE))
   
-  
-  
+  print(arrests_injuries_crashes)
+
+
+retaliation_discrimination <- payouts_data %>%
+  filter(case_type ==
+    "Retaliation",
+    "Gender Discrimination",
+    "Race/Color/National Origin Discrimination") %>%
+  summarize(total_retaliation_discrimination = sum(amount, na.rm = TRUE))
+
+
+print(retaliation_discrimination)
 ```
 
 
-"Many cases have arisen from people being wounded or killed while crossing city streets: In recent years, the city agreed to pay $15 million to end a legal battle over a man who was gravely injured while crossing Franklin Avenue in Hollywood, another $15 million to the family of two girls hit in a North Hollywood crosswalk, and $9.5 million to the family of a teenage girl fatally struck by a taxi near Dockweiler State Beach." 
+Most common payouts in L.A. 
 
 #Q5: 
 
-- How much has the city paid out in legal settlements related to pedestrian injuries or fatalities?
-- What is the total value of settlements involving people hit while crossing city streets?
-- How many legal cases in the dataset involve pedestrian accidents, and what is their combined cost?
-- What are the largest individual payouts related to pedestrian incidents in the dataset?
+- What is the percentage breakdown of legal payouts (2005-2018) by category?
+
+```{r}
+payout_document <- clean_names(read_csv("output/type-totals.csv"))
+```
+
+
+
 
 ```{r}
 
-#5.1
+top_payouts <- payout_document %>%
+  arrange(desc(amount_percent)) %>%
+  slice(1:6)
 
-pedestrian_injuries_payment <- payouts_data %>%
-  filter(case_type == 'Traffic Accident - Pedestrian' | case_type == 'Law Enforcement Related Injury') %>%
-   summarize(total_amount = sum(amount, na.rm = TRUE))
 
-print(pedestrian_injuries_payment)
-  
-
-#I don't have any geo locations in data
-geo_cases <- payouts_data %>%
-  filter(str_detect(case_name, "Franklin Avenue|Hollywood|Dockweiler|North Hollywood")) %>%
-  select(case_name, amount, case_type, department)
-
-print(geo_cases)
-
+ggplot(top_payouts, aes(x = reorder(latimes_type, amount_percent), y = amount_percent)) +
+  geom_col(fill = "#1f77b4") +
+  coord_flip() +
+  labs(
+    title = "Top 6 Payout Categories by Percentage",
+    x = "Category",
+    y = "Percent of Total Payouts"
+  ) +
+   theme_economist()
 
 ```
-
